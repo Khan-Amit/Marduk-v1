@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marduk-v1 · Resonance Vault</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e1a;
+            font-family: 'Courier New', monospace;
+            padding: 1rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: #0f1322;
+            border-radius: 2rem;
+            border: 1px solid #7a4aff;
+            overflow: hidden;
+        }
+        .header {
+            background: #080c18;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #7a4aff;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .title { color: #aa88ff; font-weight: bold; font-size: 1.3rem; }
+        .badge { color: #88ffaa; font-size: 0.8rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            min-height: 500px;
+        }
+        .vault-panel {
+            background: #0c1020;
+            padding: 1.5rem;
+            border-right: 1px solid #2a3a60;
+        }
+        .resonance-area {
+            text-align: center;
+            background: #080c1a;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            border: 2px solid #aa88ff;
+            margin-bottom: 1rem;
+        }
+        .resonance-icon { font-size: 4rem; animation: pulse 2s infinite; }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+        .peak-count { font-size: 2rem; color: #ffcc66; }
+        .bridge-stats { font-size: 1rem; color: #88ffaa; margin-top: 10px; }
+        .input-group { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+        button {
+            background: #1f2c46;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 2rem;
+            color: white;
+            cursor: pointer;
+        }
+        button.primary { background: #5a3a8a; }
+        .terminal-panel {
+            background: #03060e;
+            display: flex;
+            flex-direction: column;
+        }
+        .terminal-header {
+            background: #11161f;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #2a3348;
+        }
+        .terminal-log {
+            padding: 1rem;
+            font-size: 0.7rem;
+            color: #aa88ff;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        .log-line {
+            border-left: 2px solid #7a4aff;
+            padding-left: 8px;
+            margin: 4px 0;
+        }
+        .wave-container {
+            background: #010410;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        canvas {
+            width: 100%;
+            background: #010410;
+            border-radius: 0.5rem;
+        }
+        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="title">🌀 MARDUK-v1 · RESONANCE VAULT</div>
+        <div class="badge">⚡ Universal Frequency Translator</div>
+    </div>
+    <div class="grid">
+        <div class="vault-panel">
+            <div class="resonance-area">
+                <div class="resonance-icon">🌀⚡🌀</div>
+                <div class="peak-count" id="peakCount">0</div>
+                <div>RESONANCE PEAKS DETECTED</div>
+                <div class="bridge-stats" id="bridgeStats">Bridge: 0 transfers</div>
+            </div>
+            <div class="wave-container">
+                <canvas id="waveCanvas" width="500" height="120" style="width:100%; height:auto; background:#010410; border-radius:8px;"></canvas>
+                <div style="font-size:0.6rem; text-align:center; margin-top:5px;">🌊 frequency wave · resonant peaks marked ⚡</div>
+            </div>
+            <div class="input-group">
+                <button id="refreshBtn" class="primary">🔄 Refresh Marduk Status</button>
+                <button id="exportBtn">📄 Export Proof</button>
+            </div>
+            <div id="msg" style="color:#88ffaa; font-size:0.7rem; text-align:center; margin-top:10px;"></div>
+        </div>
+        <div class="terminal-panel">
+            <div class="terminal-header">⚡ MARDUK TERMINAL · <span id="vaultState">listening for resonance</span></div>
+            <div class="terminal-log" id="terminalLog">
+                <div class="log-line">> MARDUK-v1 INITIALIZED</div>
+                <div class="log-line">> Sacred frequencies: 7,13,22,34,41,50</div>
+                <div class="log-line">> Listening for resonance peaks...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Marduk-v1 Web Vault
+    // Reads resonance data from .marduk files (simulated)
+    let peakCount = 0;
+    let bridgeCount = 0;
+    let waveCanvas = document.getElementById('waveCanvas');
+    let ctx = waveCanvas.getContext('2d');
+    waveCanvas.width = 500; waveCanvas.height = 120;
+    
+    let wavePoints = [];
+    let peaks = [];
+    
+    function addLog(msg) {
+        let term = document.getElementById('terminalLog');
+        let div = document.createElement('div');
+        div.className = 'log-line';
+        div.innerText = `> ${new Date().toLocaleTimeString()} · ${msg}`;
+        term.appendChild(div);
+        term.scrollTop = term.scrollHeight;
+        if(term.children.length > 100) term.removeChild(term.children[0]);
+    }
+    
+    function drawWave() {
+        ctx.fillStyle = '#010410';
+        ctx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+        
+        if(wavePoints.length === 0) {
+            // generate demo wave
+            for(let i = 0; i < waveCanvas.width; i++) {
+                let y = 60 + Math.sin(i * 0.05) * 40 + Math.sin(i * 0.13) * 20;
+                wavePoints.push(y);
+            }
+        }
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#7a4aff';
+        ctx.lineWidth = 1.5;
+        for(let i = 0; i < wavePoints.length - 1; i++) {
+            ctx.moveTo(i, wavePoints[i]);
+            ctx.lineTo(i+1, wavePoints[i+1]);
+            ctx.stroke();
+        }
+        
+        // mark peaks
+        for(let p of peaks) {
+            if(p.x >= 0 && p.x < waveCanvas.width) {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y - 8);
+                ctx.lineTo(p.x, p.y + 8);
+                ctx.strokeStyle = '#ffaa44';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffaa44';
+                ctx.fill();
+            }
+        }
+    }
+    
+    function addPeak() {
+        let x = Math.random() * waveCanvas.width;
+        let y = 30 + Math.random() * 70;
+        peaks.push({x: x, y: y, time: Date.now()});
+        if(peaks.length > 20) peaks.shift();
+        drawWave();
+        
+        // add random wave perturbation
+        for(let i = 0; i < wavePoints.length; i++) {
+            wavePoints[i] += (Math.random() - 0.5) * 3;
+            wavePoints[i] = Math.min(110, Math.max(10, wavePoints[i]));
+        }
+        drawWave();
+    }
+    
+    function updateStatus() {
+        // Simulate reading from Marduk engine
+        // In real implementation, this would read /data/data/com.termux/files/home/.marduk/latest_transport.txt
+        peakCount += Math.floor(Math.random() * 3);
+        bridgeCount += Math.floor(Math.random() * 2);
+        
+        document.getElementById('peakCount').innerText = peakCount;
+        document.getElementById('bridgeStats').innerHTML = `Bridge: ${bridgeCount} transfers to SHA-256`;
+        
+        if(Math.random() < 0.3) {
+            addPeak();
+            addLog(`🌀 Resonance peak #${peakCount} detected · quantum slice captured`);
+        }
+        
+        if(Math.random() < 0.2) {
+            addLog(`🌉 Bridge transfer #${bridgeCount} · Enigma → SHA-256 conversion complete`);
+        }
+    }
+    
+    function exportProof() {
+        let content = `MARDUK-v1 PROOF\n================\nDate: ${new Date().toISOString()}\nResonance Peaks: ${peakCount}\nBridge Transfers: ${bridgeCount}\nSacred Numbers: 7,13,22,34,41,50\nGolden Ratio: 0x9E3779B9\nBTC Address: bc1qk7ajtrgplvn25600wm7gx9u5c5nk8kz9dfpcqy\n\nThis vault witnessed resonance between Enigma frequency and Bitcoin pool.`;
+        let blob = new Blob([content], {type: 'text/plain'});
+        let a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `marduk_proof_${Date.now()}.txt`;
+        a.click();
+        addLog(`📁 Proof exported`);
+    }
+    
+    document.getElementById('refreshBtn').onclick = () => {
+        updateStatus();
+        addLog(`🔄 Status refreshed · Peaks: ${peakCount} · Transfers: ${bridgeCount}`);
+    };
+    document.getElementById('exportBtn').onclick = exportProof;
+    
+    // Initial wave
+    for(let i = 0; i < waveCanvas.width; i++) {
+        wavePoints.push(60 + Math.sin(i * 0.05) * 45 + Math.sin(i * 0.13) * 20);
+    }
+    drawWave();
+    
+    setInterval(updateStatus, 4000);
+    addLog(`🌀 MARDUK-v1 ONLINE · listening for universal frequency`);
+    addLog(`🔮 Sacred numbers activated: 7,13,22,34,41,50`);
+    addLog(`⚡ Bridge ready: Enigma → SHA-256 → Bitcoin pool`);
+</script>
+</body>
+</html>
